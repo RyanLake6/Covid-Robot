@@ -19,9 +19,9 @@ int redKeyPin = 9;                // pin for the red/green button
 int greenKeyPin = 8;             
 
 LiquidCrystal lcd(13, 12, 7, 4, 3, 2);   // tell the RedBoard what pins are connected to the display
-
-float distance1 = 0;               // stores the distance measured by distance sensor 1/2
-float distance2 = 0;              
+   
+bool sensorDetect1 = false;              // stores whether sensor sees a person or not     
+bool sensorDetect2 = false;  
 
 void setup() {
   Serial.begin (9600);        //set up a serial connection with the computer
@@ -43,14 +43,13 @@ void loop() {
 
   // variables:
   bool loop = true;
-  int interval = 50;
   int numPeople = 0;
+  int numPeopleIn = 0;
+  int numPeopleOut = 0;
   int hallwayL = 0;
-  double time1 = 0;
-  double time2 = 0;
-  double timeInit = 0;
-  bool sensorDetect1 = false;
-  bool sensorDetect2 = false;
+  float distance1 = 0;
+  float distance2 = 0;
+  
     
   //output the distance every time interval
   while (loop == true) {
@@ -66,101 +65,22 @@ void loop() {
     distance1 = getDistance(trigPin_1, echoPin_1);
     distance2 = getDistance(trigPin_2, echoPin_2);
     
-    /*
-    Serial.print(distance1);
-    Serial.print("     ");
+    // main logic of the code:
+    numPeopleIn = checkSensor1(hallwayL, distance1);
+    numPeopleOut = checkSensor2(hallwayL, distance2);
+    numPeople = numPeopleIn - numPeopleOut;
+        
     lcd.setCursor(0, 0);
-    */
-
-    //code for first distance sensor
-    if (distance1 < hallwayL) { 
-      if (sensorDetect1 == false) {
-        numPeople += 1;
-        sensorDetect1 = true;
-      }
-    }
-    if (distance1 > hallwayL) {
-        sensorDetect1 = false;
-      }
-
-
-    
-    timeInit = millis();
-    if (distance2 < hallwayL) {  
-      if (sensorDetect2 == false) {
-        numPeople -= 1;
-        sensorDetect2 = true;
-      }
-    }
-    if (distance2 > hallwayL) {
-      sensorDetect2 = false;
-    }
-    
-    
-    lcd.print("Distance: ");  //outputting on the lcd the distance and number of people
-    lcd.print(distance1);
-    lcd.setCursor(0, 1);
     lcd.print("People: ");
     lcd.print(numPeople);
     delay(500);
   }
 }
-/*
-void loop() {
 
-  // variables:
-  bool loop = true;
-  int interval = 50;
-  int numPeople = 0;
-  int hallwayL = 0;
-    
-  //output the distance every time interval
-  while (loop == true) {
-    if (digitalRead(greenKeyPin) == LOW) {
-      hallwayL = 10;
-    }
-
-    if (digitalRead(redKeyPin) == LOW) {
-      hallwayL = 20;
-    }
-    distance1 = getDistance(trigPin_1, echoPin_1);
-    distance2 = getDistance(trigPin_2, echoPin_2);
-    
-    //Serial.print(distance1);
-    Serial.print("     ");
-    lcd.setCursor(0, 0);
-
-    if (distance1 < hallwayL) { 
-      time = millis();
-      Serial.print(time);
-      if (time > 150){
-        numPeople += 1;
-        time = 0;
-      }
-      delay(500);
-    }
-   
-    
-    if (distance2 < hallwayL) {  
-      numPeople -= 1;
-      delay(500);
-    }
-    
-    
-    lcd.print("Distance: ");  //outputting on the lcd the distance and number of people
-    lcd.print(distance1);
-    lcd.setCursor(0, 1);
-    lcd.print("People: ");
-    lcd.print(numPeople);
-    delay(500);
-  }
-}
-*/
-//------------------FUNCTIONS-------------------------------
+//FUNCTIONS:
 
 //RETURNS THE DISTANCE MEASURED BY THE HC-SR04 DISTANCE SENSOR
-float getDistance(int trigPin, int echoPin)
-{
+float getDistance(int trigPin, int echoPin) {
   float echoTime;                   //variable to store the time it takes for a ping to bounce off an object
   float calculatedDistance;         //variable to store the distance calculated from the echo time
 
@@ -177,4 +97,33 @@ float getDistance(int trigPin, int echoPin)
   return calculatedDistance;              //send back the distance that was calculated
 }
 
-int checkSensor1 ()
+// returns the number of people entering the building from sensor 1
+int checkSensor1 (int sensorDistance, float distanceValue) {
+  int numPeopleEnter = 0;
+  if (distanceValue < sensorDistance) { 
+    if (sensorDetect1 == false) {
+      numPeopleEnter += 1;
+      sensorDetect1 = true;
+    }
+  }
+  if (distanceValue > sensorDistance) {
+    sensorDetect1 = false;
+  }
+  return numPeopleEnter;
+}
+
+
+// returns the number of people exiting the building from sensor 2
+int checkSensor2 (int sensorDistance, float distanceValue) {
+  int numPeopleExit = 0;
+  if (distanceValue < sensorDistance) {  
+    if (sensorDetect2 == false) {
+      numPeopleExit -= 1;
+      sensorDetect2 = true;
+    }
+  }
+    if (distanceValue > sensorDistance) {
+      sensorDetect2 = false;
+    }
+  return numPeopleExit;
+}
