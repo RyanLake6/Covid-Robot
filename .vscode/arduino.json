@@ -1,0 +1,4 @@
+{
+    "board": "arduino:avr:uno",
+    "sketch": "Headcounter_1111\\Headcounter_1111.ino"
+}
